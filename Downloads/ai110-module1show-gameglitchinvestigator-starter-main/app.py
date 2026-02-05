@@ -111,6 +111,16 @@ if submit:
 
         if show_hint:
             st.warning(message)
+        
+        # Challenge 4: Hot/Cold Temperature Feedback
+        if outcome != "Win":
+            distance = abs(guess_int - st.session_state.secret)
+            if distance <= 5:
+                st.error(f"🔥 BURNING! You're extremely close (distance: {distance})")
+            elif distance <= 20:
+                st.warning(f"🟡 WARM! Getting closer (distance: {distance})")
+            else:
+                st.info(f"❄️ COLD! You're far away (distance: {distance})")
 
         st.session_state.score = update_score(
             current_score=st.session_state.score,
@@ -135,21 +145,82 @@ if submit:
                 )
 
 
+# Challenge 4: Session Summary Table (appears when game ends)
+if st.session_state.status in ["won", "lost"]:
+    st.divider()
+    st.subheader("📋 Game Session Summary")
+    
+    # Calculate statistics
+    numeric_guesses = [g for g in st.session_state.history if isinstance(g, int)]
+    if numeric_guesses:
+        distances = [abs(g - st.session_state.secret) for g in numeric_guesses]
+        closest_guess = min(numeric_guesses, key=lambda x: abs(x - st.session_state.secret))
+        avg_distance = sum(distances) / len(distances)
+    else:
+        closest_guess = "N/A"
+        avg_distance = "N/A"
+    
+    # Create summary rows
+    summary_data = {
+        "Metric": [
+            "Outcome",
+            "Total Attempts",
+            "Final Score",
+            "Closest Guess",
+            "Average Distance",
+            "Secret Number"
+        ],
+        "Value": [
+            "🏆 Win!" if st.session_state.status == "won" else "❌ Loss",
+            str(st.session_state.attempts),
+            str(st.session_state.score),
+            str(closest_guess),
+            f"{avg_distance:.1f}" if isinstance(avg_distance, float) else avg_distance,
+            str(st.session_state.secret)
+        ]
+    }
+    
+    import pandas as pd
+    st.dataframe(pd.DataFrame(summary_data), use_container_width=True, hide_index=True)
 
 # Challenge 2A: Guess History Visualizer
 if len(st.session_state.history) > 0:
     st.divider()
-    st.subheader("📊 Guess History")
+    st.subheader("📊 Guess History & Analytics")
     
     # Filter numeric guesses from history (skip invalid entries)
     numeric_guesses = [g for g in st.session_state.history if isinstance(g, int)]
     
     if numeric_guesses:
+        import pandas as pd
+        
         # Create attempt numbers (1, 2, 3, ...)
         attempt_numbers = list(range(1, len(numeric_guesses) + 1))
         
         # Calculate distance from secret
         distances = [abs(g - st.session_state.secret) for g in numeric_guesses]
+        
+        # Challenge 4: Create Hot/Cold Status for each guess
+        hot_cold_status = []
+        for distance in distances:
+            if distance <= 5:
+                hot_cold_status.append("🔥 BURNING!")
+            elif distance <= 20:
+                hot_cold_status.append("🟡 WARM")
+            else:
+                hot_cold_status.append("❄️ COLD")
+        
+        # Create enhanced dataframe with all metrics
+        history_df = pd.DataFrame({
+            "Attempt": attempt_numbers,
+            "Guess": numeric_guesses,
+            "Distance": distances,
+            "Status": hot_cold_status
+        })
+        
+        # Display enhanced table
+        st.subheader("Attempt Details")
+        st.dataframe(history_df, use_container_width=True, hide_index=True)
         
         # Create visualization columns
         col1, col2 = st.columns(2)
@@ -168,8 +239,15 @@ if len(st.session_state.history) > 0:
             })
         
         # Summary stats
-        st.metric("Average Distance", f"{sum(distances) / len(distances):.1f}")
-        st.metric("Closest Guess", f"{min(numeric_guesses, key=lambda x: abs(x - st.session_state.secret))}")
+        st.subheader("Session Metrics")
+        col1, col2, col3 = st.columns(3)
+        with col1:
+            st.metric("Average Distance", f"{sum(distances) / len(distances):.1f}")
+        with col2:
+            st.metric("Closest Guess", f"{min(numeric_guesses, key=lambda x: abs(x - st.session_state.secret))}")
+        with col3:
+            closest_distance = min(distances)
+            st.metric("Best Attempt", f"{closest_distance} away")
 
 st.divider()
 st.caption("Built by an AI that claims this code is production-ready.")

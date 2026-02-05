@@ -53,3 +53,66 @@ Answer each question in 3 to 5 sentences. Be specific and honest about what actu
 **What I'd do differently with AI next time:** I'd spend more time understanding function signatures, return types, and existing test patterns before asking AI to generate code. The issue with starter tests not unpacking the tuple return value could have been avoided if we'd reviewed the actual `check_guess()` implementation upfront. Reading the code first saves time compared to debugging failed tests later.
 
 **How this project changed your thinking about AI-generated code:** AI-generated code is powerful for scaffolding and refactoring, but it's not "fire and forget"—it needs careful review for correctness, edge cases, and consistency with the codebase. The reversed feedback bug was your human observation, but the fix and refactoring greatly benefited from AI collaboration and structured testing. AI works best as a teammate that you verify and guide, not as a replacement for critical thinking.
+
+## 6. Challenge 4: Enhanced Game UI
+
+**What UI enhancements were added:**
+- **Hot/Cold Feedback:** After each guess, the game displays color-coded temperature feedback based on distance from the secret number (🔥 BURNING ≤5 units away, 🟡 WARM ≤20 units away, ❄️ COLD >20 units away). This gives immediate visual feedback without changing game logic.
+- **Session Summary Table:** When the game ends (win or loss), a summary table displays showing outcome emoji (🏆 or ❌), total attempts, score, closest guess, average distance, and the secret number. This provides a satisfying end-game recap.
+- **Enhanced Guess History:** The guess history now includes a "Distance" column showing how far each guess was from the secret, plus the corresponding Hot/Cold status for each attempt. A metrics summary shows average distance and the closest guess made.
+
+**Verification that game logic wasn't broken:** All 33 pytest tests passed after the UI enhancements (27 edge-case tests + 6 original tests). The enhancements only read from existing session state and never modified the `parse_guess()`, `check_guess()`, or `update_score()` functions. The UI changes were purely presentational layers on top of unmodified core logic.
+
+**AI collaboration on Challenge 4:** GitHub Copilot provided the pandas DataFrame syntax for creating the summary table and suggested the conditional logic for Hot/Cold status display. I verified that the implementation didn't introduce any dependencies on game state management that would break the existing test suite.
+
+## 7. Challenge 5: Comparing AI Model Fixes
+
+**The bug selected for comparison:** The hidden string comparison bug where on even-numbered attempts, the code would incorrectly compare the guess because it was converting the integer to a string. This caused incorrect "Too High" vs "Too Low" outcomes on every other attempt.
+
+**Test case that reveals the bug:**
+```python
+# Attempt 2 (even number): Guess 40, Secret 50
+# Bug: Compares "40" (string) with 50 (int) 
+# Result: String "40" is lexicographically compared, breaking logic
+# Expected: "Too Low" | Actual: "Too High" (on even attempts only)
+```
+
+**Fix Approach 1 - Minimal/Direct (GitHub Copilot style):**
+```python
+def check_guess(guess_int, secret):
+    """Compares guess to secret number. Returns: (outcome, message) tuple"""
+    if guess_int == secret:
+        return ("Win", f"🎉 You got it! The secret was {secret}")
+    elif guess_int > secret:
+        return ("Too High", "📉 Go LOWER!")
+    else:
+        return ("Too Low", "📈 Go HIGHER!")
+```
+**Strengths:** Clean, simple, directly removes the string conversion. Immediately obvious what the fix does. Zero defensive overhead.  
+**Weakness:** Assumes `guess_int` is always an integer; no validation if incorrect type is passed.
+
+**Fix Approach 2 - Defensive/Explicit Type Checking:**
+```python
+def check_guess(guess_int, secret):
+    """Compares guess to secret number with input validation. Returns: (outcome, message) tuple"""
+    # Ensure inputs are integers before comparison
+    if not isinstance(guess_int, int) or not isinstance(secret, int):
+        raise TypeError(f"Both inputs must be integers, got {type(guess_int)} and {type(secret)}")
+    
+    if guess_int == secret:
+        return ("Win", f"🎉 You got it! The secret was {secret}")
+    elif guess_int > secret:
+        return ("Too High", "📉 Go LOWER!")
+    else:
+        return ("Too Low", "📈 Go HIGHER!")
+```
+**Strengths:** Explicitly validates input types before comparison. Fails fast with a clear error message if wrong type is passed. More defensive against future code changes.  
+**Weakness:** More verbose. Adds runtime type checking overhead (minimal but non-zero). May be overkill for a tightly-controlled codebase where `parse_guess()` already validates the input.
+
+**Readability winner:** Approach 1. The minimal fix is easier to scan and understand. Anyone reading "if guess_int > secret" immediately knows it's a numeric comparison with no ambiguity.
+
+**"Why" explanation winner:** Approach 2. The type checking makes assumptions explicit and shows defensive thinking. It communicates "we're being careful about what types we accept here."
+
+**Practical winner for this codebase:** Approach 1. Since `parse_guess()` always returns an integer or raises an error before `check_guess()` is called, the input is already guaranteed to be an integer. Approach 2's defensive check is redundant for this specific context.
+
+**Lesson learned:** Different AI models prioritize different coding philosophies. A pragmatic model favors simplicity; a more defensive-minded model opts for explicit validation. Both are valid solutions—context and data flow determine which is appropriate.
