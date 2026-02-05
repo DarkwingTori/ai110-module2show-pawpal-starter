@@ -11,9 +11,14 @@ def get_range_for_difficulty(difficulty: str):
     return 1, 100
 
 
-def parse_guess(raw: str):
+def parse_guess(raw: str, min_val: int = None, max_val: int = None):
     """
     Parse user input into an int guess.
+
+    Args:
+        raw: User input string
+        min_val: Optional minimum allowed value (inclusive)
+        max_val: Optional maximum allowed value (inclusive)
 
     Returns: (ok: bool, guess_int: int | None, error_message: str | None)
     """
@@ -30,6 +35,13 @@ def parse_guess(raw: str):
             value = int(raw)
     except Exception:
         return False, None, "That is not a number."
+
+    # FIX: Added range validation for Challenge 1 edge-case testing
+    # Collaboration: User challenge to handle out-of-range guesses
+    if min_val is not None and value < min_val:
+        return False, None, f"Guess must be at least {min_val}."
+    if max_val is not None and value > max_val:
+        return False, None, f"Guess must be at most {max_val}."
 
     return True, value, None
 

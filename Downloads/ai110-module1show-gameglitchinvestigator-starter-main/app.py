@@ -104,12 +104,10 @@ if submit:
     else:
         st.session_state.history.append(guess_int)
 
-        if st.session_state.attempts % 2 == 0:
-            secret = str(st.session_state.secret)
-        else:
-            secret = st.session_state.secret
-
-        outcome, message = check_guess(guess_int, secret)
+        # FIX: Removed string conversion bug that broke even-attempt comparisons
+        # Challenge 1: Lines 106-108 converted secret to string on even attempts,
+        # causing lexicographic instead of numeric comparison ("60" > "100" = True)
+        outcome, message = check_guess(guess_int, st.session_state.secret)
 
         if show_hint:
             st.warning(message)
@@ -135,6 +133,43 @@ if submit:
                     f"The secret was {st.session_state.secret}. "
                     f"Score: {st.session_state.score}"
                 )
+
+
+
+# Challenge 2A: Guess History Visualizer
+if len(st.session_state.history) > 0:
+    st.divider()
+    st.subheader("📊 Guess History")
+    
+    # Filter numeric guesses from history (skip invalid entries)
+    numeric_guesses = [g for g in st.session_state.history if isinstance(g, int)]
+    
+    if numeric_guesses:
+        # Create attempt numbers (1, 2, 3, ...)
+        attempt_numbers = list(range(1, len(numeric_guesses) + 1))
+        
+        # Calculate distance from secret
+        distances = [abs(g - st.session_state.secret) for g in numeric_guesses]
+        
+        # Create visualization columns
+        col1, col2 = st.columns(2)
+        
+        with col1:
+            st.subheader("Guess Progression")
+            st.line_chart({
+                "Guess Value": numeric_guesses,
+                "Secret": [st.session_state.secret] * len(numeric_guesses)
+            })
+        
+        with col2:
+            st.subheader("Distance from Secret")
+            st.bar_chart({
+                "Distance": distances
+            })
+        
+        # Summary stats
+        st.metric("Average Distance", f"{sum(distances) / len(distances):.1f}")
+        st.metric("Closest Guess", f"{min(numeric_guesses, key=lambda x: abs(x - st.session_state.secret))}")
 
 st.divider()
 st.caption("Built by an AI that claims this code is production-ready.")
