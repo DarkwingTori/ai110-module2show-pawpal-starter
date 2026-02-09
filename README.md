@@ -31,8 +31,13 @@ It wrote the code, ran away, and now the game is unplayable.
 
 ## 📸 Demo
 
-- [ ] [Insert a screenshot of your fixed, winning game here]
+![Game Screenshot] <img width="1470" height="920" alt="Screenshot 2026-02-04 at 9 55 18 PM" src="https://github.com/user-attachments/assets/c7519306-015b-4976-9482-8e9a6b90e404" />
+
 
 ## 🚀 Stretch Features
 
-- [ ] [If you choose to complete Challenge 4, insert a screenshot of your Enhanced Game UI here]
+<img width="1470" height="920" alt="Screenshot 2026-02-04 at 10 39 01 PM" src="https://github.com/user-attachments/assets/0850ecae-19cd-46fb-b949-4b394c631e5d" />
+
+<img width="1470" height="920" alt="Screenshot 2026-02-04 at 10 38 47 PM" src="https://github.com/user-attachments/assets/3a597c78-5466-495d-9ac8-572d214ebb71" />
+
+
