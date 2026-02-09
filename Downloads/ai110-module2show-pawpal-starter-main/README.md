@@ -141,6 +141,116 @@ pytest tests/ -v
 
 ---
 
+## Testing PawPal+
+
+### Test Suite Overview
+
+PawPal+ includes a comprehensive test suite with **35 automated tests** covering all system components and algorithms.
+
+### Running Tests
+
+```bash
+# Run all tests
+python -m pytest tests/ -v
+
+# Run specific test file
+python -m pytest tests/test_pawpal_phase4.py -v
+
+# Run with coverage report (requires pytest-cov)
+python -m pytest tests/ --cov=pawpal_system
+```
+
+### Test Organization
+
+| Test File | Tests | Coverage |
+|-----------|-------|----------|
+| test_pawpal_system.py | 10 | Class instantiation, enum values, mutable defaults |
+| test_pawpal.py | 18 | Task management, scheduling algorithm, edge cases |
+| test_pawpal_phase4.py | 7 | Sorting, filtering, recurring tasks, conflicts |
+| **Total** | **35** | **Complete system coverage** |
+
+### What We Test
+
+#### 1. Core Functionality (Phase 1-2)
+- ✅ Class instantiation and initialization
+- ✅ Task priority comparison and sorting
+- ✅ Pet and owner management (add, remove, get)
+- ✅ Task completion tracking
+- ✅ Total care time calculations
+
+#### 2. Scheduling Algorithm (Phase 2)
+- ✅ Priority-based scheduling (HIGH → MEDIUM → LOW)
+- ✅ Time constraint enforcement (respects available_time_minutes)
+- ✅ Time preference handling (morning tasks prioritized)
+- ✅ Multi-pet scheduling coordination
+- ✅ Reasoning generation for transparency
+
+#### 3. Edge Cases (Phase 2)
+- ✅ Empty task lists
+- ✅ Zero available time
+- ✅ No pets registered
+- ✅ Invalid priority strings
+- ✅ Task removal with non-existent tasks
+
+#### 4. Smart Algorithms (Phase 4)
+- ✅ Time-based sorting (chronological order)
+- ✅ Pet-specific filtering
+- ✅ Status-based filtering (completed/incomplete)
+- ✅ Recurring task creation (daily/weekly)
+- ✅ Automatic next occurrence generation
+- ✅ Conflict detection (overlapping time windows)
+- ✅ Adjacent task validation (no false positives)
+
+### Test Results
+
+```
+============================== 35 passed in 0.02s ==============================
+
+✓ Phase 1: 10/10 tests passing
+✓ Phase 2: 18/18 tests passing
+✓ Phase 4: 7/7 tests passing
+
+Total: 35/35 (100%)
+```
+
+### Confidence Level: ⭐⭐⭐⭐⭐ (5/5 stars)
+
+**Why high confidence:**
+
+1. **Comprehensive Coverage** - All major features tested (instantiation, scheduling, algorithms, edge cases)
+2. **100% Pass Rate** - All 35 tests pass consistently with fast execution (0.02s)
+3. **Edge Case Handling** - Tests cover empty lists, zero time, invalid inputs, conflicts
+4. **Algorithm Verification** - Sorting, filtering, recurring tasks, conflict detection all validated
+5. **Real-world Testing** - main.py demo script exercises entire system end-to-end
+
+**Known Limitations:**
+- Tests assume valid input formats (time strings, dates)
+- Conflict detection only checks time overlap, not resource constraints
+- No stress testing for large numbers of tasks (100+)
+- No integration tests for Streamlit UI components
+
+**Next Testing Steps (if expanding):**
+- Add property-based testing with Hypothesis
+- Add performance benchmarks for large schedules
+- Add integration tests for UI components
+- Add mutation testing to verify test quality
+
+### Example Test Output
+
+```python
+pytest tests/test_pawpal_phase4.py -v
+
+tests/test_pawpal_phase4.py::test_sort_by_time PASSED              [14%]
+tests/test_pawpal_phase4.py::test_filter_by_pet PASSED             [28%]
+tests/test_pawpal_phase4.py::test_filter_by_status PASSED          [42%]
+tests/test_pawpal_phase4.py::test_recurring_task_creation PASSED   [57%]
+tests/test_pawpal_phase4.py::test_mark_complete_creates_recurrence PASSED [71%]
+tests/test_pawpal_phase4.py::test_detect_conflicts PASSED          [85%]
+tests/test_pawpal_phase4.py::test_no_conflicts_when_tasks_adjacent PASSED [100%]
+```
+
+---
+
 ## Project Structure
 
 ```
