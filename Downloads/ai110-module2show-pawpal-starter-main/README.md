@@ -44,6 +44,38 @@ pip install -r requirements.txt
 
 ---
 
+## Key Features
+
+### 🐾 Pet Management
+- ✅ Multi-pet support (dogs, cats, birds, rabbits, and more)
+- ✅ Pet-specific task lists with independent management
+- ✅ Energy level tracking (low, medium, high)
+- ✅ Special needs accommodation
+
+### 📋 Task Scheduling
+- ✅ Priority-based scheduling (HIGH, MEDIUM, LOW)
+- ✅ Time constraint enforcement (respects owner's available time)
+- ✅ Morning/evening time preferences
+- ✅ Transparent reasoning engine (explains every decision)
+- ✅ Greedy first-fit algorithm (O(n log n))
+
+### 🤖 Smart Algorithms (Phase 4)
+- ✅ **Chronological sorting** - View tasks in time order
+- ✅ **Pet-specific filtering** - Focus on one pet at a time
+- ✅ **Completion status filtering** - Track progress
+- ✅ **Recurring tasks** - Daily/weekly tasks auto-recreate when completed
+- ✅ **Conflict detection** - Identify overlapping time windows
+
+### 💻 User Interface
+- ✅ Interactive Streamlit web app with real-time updates
+- ✅ Session state management for data persistence
+- ✅ Real-time metrics and calculations
+- ✅ Task completion tracking with progress indicators
+- ✅ Visual feedback (success messages, warnings, error handling)
+- ✅ Responsive layout with sidebar navigation
+
+---
+
 ## Smarter Scheduling (Phase 4)
 
 PawPal+ includes intelligent algorithmic features to make pet care planning more efficient:

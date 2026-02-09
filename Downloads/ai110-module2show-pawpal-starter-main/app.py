@@ -176,10 +176,11 @@ with col1:
                     priority_colors = {"HIGH": "🔴", "MEDIUM": "🟡", "LOW": "🟢"}
                     priority_icon = priority_colors.get(task.priority.name, "")
                     time_pref_str = f" | ⏰ {task.time_preference}" if task.time_preference else ""
+                    recurring_str = f" | 🔄 {task.frequency}" if task.frequency else ""
 
                     st.write(
                         f"{priority_icon} **{task.title}** ({task.duration_minutes}min) "
-                        f"| {task.task_type.value}{time_pref_str}"
+                        f"| {task.task_type.value}{time_pref_str}{recurring_str}"
                     )
 
                 with col_task_delete:
@@ -243,9 +244,32 @@ if st.button("📋 Create Schedule", use_container_width=True, key="generate_sch
 if st.session_state.schedule is not None and len(st.session_state.schedule) > 0:
     st.subheader("Your Daily Schedule")
 
+    # Phase 4: Add sorting and filtering controls
+    col_control_a, col_control_b = st.columns(2)
+
+    with col_control_a:
+        sort_by_time = st.checkbox("Sort chronologically", value=True, key="sort_checkbox")
+
+    with col_control_b:
+        pet_names_for_filter = ["All pets"] + [pet.name for pet in st.session_state.owner.get_all_pets()]
+        filter_pet = st.selectbox(
+            "Filter by pet",
+            pet_names_for_filter,
+            key="filter_pet_select"
+        )
+
+    # Apply sorting and filtering
+    schedule_to_display = st.session_state.schedule
+
+    if sort_by_time:
+        schedule_to_display = st.session_state.scheduler.sort_by_time(schedule_to_display)
+
+    if filter_pet != "All pets":
+        schedule_to_display = st.session_state.scheduler.filter_by_pet(filter_pet)
+
     # Display schedule as table
     schedule_data = []
-    for task, start_time in st.session_state.schedule:
+    for task, start_time in schedule_to_display:
         schedule_data.append({
             "Time": start_time,
             "Task": task.title,
@@ -255,6 +279,13 @@ if st.session_state.schedule is not None and len(st.session_state.schedule) > 0:
         })
 
     st.dataframe(schedule_data, use_container_width=True)
+
+    # Phase 4: Conflict detection
+    conflicts = st.session_state.scheduler.detect_conflicts()
+    if conflicts:
+        st.warning("⚠️ Schedule Conflicts Detected")
+        for conflict in conflicts:
+            st.write(conflict)
 
     # Display reasoning in expander
     with st.expander("📝 Scheduling Reasoning", expanded=False):

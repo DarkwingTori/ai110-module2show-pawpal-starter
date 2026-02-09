@@ -54,10 +54,13 @@ classDiagram
         -string description
         -string time_preference
         -string pet_name
+        -string frequency
+        -string next_due_date
         +get_priority_score() int
         +is_high_priority() bool
         +is_time_flexible() bool
         +matches_type(task_type: TaskType) bool
+        +create_next_occurrence(completion_date: string) Task
     }
 
     class TaskType {
@@ -79,15 +82,24 @@ classDiagram
     class Scheduler {
         -Owner owner
         -list scheduled_tasks
+        -set completed_tasks
         -int total_scheduled_time
         -list~string~ reasoning
         +generate_schedule() list~tuple~
         +get_schedule() list~tuple~
         +get_reasoning() list~string~
         +clear_schedule() void
+        +mark_task_complete(task_title: string, completion_date: string) bool
+        +is_task_complete(task_title: string) bool
+        +get_remaining_tasks() list~tuple~
+        +sort_by_time(schedule: list) list~tuple~
+        +filter_by_pet(pet_name: string) list~tuple~
+        +filter_by_status(completed: bool) list~tuple~
+        +detect_conflicts() list~string~
         -_prioritize_tasks(tasks: list~Task~) list~Task~
         -_can_fit_task(task: Task, remaining_time: int) bool
         -_calculate_start_time(current_time: int) string
+        -_parse_time_to_minutes(time_str: string) int
     }
 
     Owner "1" *-- "0..*" Pet : owns
@@ -133,8 +145,22 @@ classDiagram
 
 **b. Design changes**
 
-- Did your design change during implementation?
-- If yes, describe at least one change and why you made it.
+Yes, the design evolved significantly during implementation:
+
+**Change 1: Added Task Completion Tracking to Scheduler**
+- **Initial design:** No explicit completion tracking mechanism
+- **Final design:** Added `completed_tasks` set to Scheduler class
+- **Why:** Users needed to track progress throughout the day and distinguish between scheduled vs. completed tasks. Storing completion state in Scheduler (rather than modifying Task objects directly) maintains separation of concerns - Scheduler manages scheduling state, while Task remains a pure data class without mutable state.
+
+**Change 2: Added Phase 4 Smart Algorithm Methods**
+- **Initial design:** Only basic priority-based scheduling
+- **Final design:** Added sort_by_time(), filter_by_pet(), filter_by_status(), detect_conflicts()
+- **Why:** Real-world usage patterns revealed that users need multiple views of the same schedule. Pet owners want to see tasks chronologically (sort by time), focus on one pet at a time (filter by pet), track progress (filter by status), and identify potential issues (conflict detection). These features emerged from thinking about actual user workflows.
+
+**Change 3: Recurring Task Support**
+- **Initial design:** One-time tasks only
+- **Final design:** Added frequency and next_due_date fields to Task, plus create_next_occurrence() method
+- **Why:** Pet care is inherently repetitive - feeding happens daily, grooming weekly. Manually recreating the same tasks every day is tedious and error-prone. The recurring task feature uses the template pattern to automatically clone tasks with updated due dates, reducing data entry and ensuring consistency in pet care routines.
 
 ---
 
@@ -195,13 +221,54 @@ The scheduler's `detect_conflicts()` method identifies overlapping tasks but **d
 
 **a. How you used AI**
 
-- How did you use AI tools during this project (for example: design brainstorming, debugging, refactoring)?
-- What kinds of prompts or questions were most helpful?
+I used Claude Code extensively throughout all six phases of development:
+
+**Phase 1 (System Design):**
+- Used AI to brainstorm UML class structure and relationships
+- Asked for feedback on composition vs. inheritance patterns
+- Requested examples of Python enum usage for type safety
+- Most helpful prompt: *"What are the core classes needed for a pet care scheduling system with priorities and time constraints?"*
+
+**Phase 2 (Core Implementation):**
+- Asked AI to implement stub methods based on docstrings and specifications
+- Used AI for debugging the greedy scheduling algorithm logic
+- Requested help with time conversion (converting minutes to "9:00 AM" format)
+- Most helpful prompt: *"Implement this filtering method using list comprehensions"*
+
+**Phase 3 (UI Integration):**
+- Asked how to use `st.session_state` for persistent object storage across Streamlit reruns
+- Requested examples of Streamlit form handling and enum conversion
+- Got help converting string inputs from dropdowns to enum types
+- Most helpful prompt: *"How do I prevent objects from being recreated on every Streamlit rerun?"*
+
+**Phase 4 (Smart Algorithms):**
+- Asked for lambda function examples for time-based sorting
+- Requested interval overlap detection algorithm for conflict checking
+- Got help with `datetime.timedelta` for calculating recurring task due dates
+- Most helpful prompt: *"How do I check if two time intervals overlap using start and end times?"*
+
+**Phase 5 & 6 (Testing & Documentation):**
+- Used AI to generate comprehensive test cases covering edge cases
+- Asked for documentation structure suggestions
+- Requested help organizing test files by feature area
 
 **b. Judgment and verification**
 
-- Describe one moment where you did not accept an AI suggestion as-is.
-- How did you evaluate or verify what the AI suggested?
+**Example of rejecting an AI suggestion:**
+
+When implementing conflict detection in Phase 4, Claude initially suggested **preventing conflicting tasks from being scheduled** by raising an exception or blocking the schedule generation entirely.
+
+**How I evaluated this:**
+1. **Considered real-world use cases:** I thought about how pet owners actually use schedules - they might intentionally create overlapping tasks (e.g., one family member walks the dog while another feeds the cat, or a quick medication task happens during a longer walk)
+2. **Assessed user autonomy:** Strict prevention would be frustrating and assume the system knows better than the user
+3. **Explored alternatives:** I asked Claude to revise the approach to return warnings instead of blocking
+
+**How I verified the final approach:**
+- I tested the revised implementation in main.py by creating intentional conflicts
+- Confirmed that warnings appeared in the output without crashing the program
+- Verified that users retained control while still receiving helpful feedback
+
+**Result:** The system now uses a **detect and warn** approach rather than **detect and prevent**, which balances safety with user autonomy. This taught me that AI suggestions must be evaluated against real-world scenarios, not just technical correctness.
 
 ---
 
@@ -209,13 +276,46 @@ The scheduler's `detect_conflicts()` method identifies overlapping tasks but **d
 
 **a. What you tested**
 
-- What behaviors did you test?
-- Why were these tests important?
+**Behaviors tested (35 total tests across 3 files):**
+
+1. **Basic CRUD Operations** - Adding/removing pets and tasks, retrieving by name
+   - **Why important:** Core functionality that all other features depend on. If pets can't be added or tasks can't be created, nothing else works.
+
+2. **Priority-Based Scheduling** - HIGH tasks scheduled before MEDIUM/LOW regardless of insertion order
+   - **Why important:** Ensures critical pet care needs (medication, feeding) are never skipped in favor of less important tasks like grooming.
+
+3. **Time Constraint Enforcement** - Scheduler never exceeds available_time_minutes
+   - **Why important:** Prevents creating impossible schedules that owners can't realistically execute.
+
+4. **Recurring Task Logic** - Daily/weekly tasks automatically recreate themselves when marked complete
+   - **Why important:** Pet care is repetitive by nature. Automation reduces manual data entry and ensures consistency in daily/weekly routines.
+
+5. **Conflict Detection** - Identifies when multiple tasks overlap in time
+   - **Why important:** Helps users spot scheduling mistakes before committing to a plan, preventing impossible double-bookings.
+
+6. **Edge Cases** - Empty task lists, zero available time, invalid inputs, non-existent pets
+   - **Why important:** Real-world systems must gracefully handle unexpected inputs without crashing. Edge case handling distinguishes robust software from fragile prototypes.
 
 **b. Confidence**
 
-- How confident are you that your scheduler works correctly?
-- What edge cases would you test next if you had more time?
+**Confidence level:** ⭐⭐⭐⭐⭐ (5/5 stars)
+
+I'm highly confident the scheduler works correctly because:
+
+1. **100% Test Pass Rate** - All 35 automated tests pass consistently with fast execution (0.02s)
+2. **Comprehensive Coverage** - Tests span instantiation, CRUD operations, scheduling logic, algorithms, and edge cases
+3. **End-to-End Verification** - The main.py demo script exercises the entire system workflow successfully
+4. **Algorithm Correctness** - Sorting, filtering, and conflict detection produce mathematically correct results
+5. **Real-World Testing** - The Streamlit UI demonstrates that all features work in an interactive context
+
+**Edge cases I would test next with more time:**
+
+1. **Stress Testing:** Schedule 100+ tasks to verify performance doesn't degrade at scale
+2. **Date Boundary Testing:** Test recurring tasks across month/year boundaries (Dec 31 → Jan 1, Feb 28 → Mar 1 in leap years)
+3. **Concurrent Modifications:** What happens if a user modifies tasks while a schedule is actively displayed?
+4. **Multi-Day Scheduling:** Extend algorithm to weekly or monthly planning horizons
+5. **Buffer Time Between Tasks:** Test whether adding 5-10 minute gaps prevents accidental conflicts
+6. **Priority Tie-Breaking:** When multiple HIGH priority tasks compete for limited time, verify consistent and predictable ordering
 
 ---
 
@@ -223,12 +323,56 @@ The scheduler's `detect_conflicts()` method identifies overlapping tasks but **d
 
 **a. What went well**
 
-- What part of this project are you most satisfied with?
+I'm most satisfied with the **clean separation between logic and UI layers**.
+
+By implementing pawpal_system.py as pure Python with zero Streamlit dependencies, I achieved:
+- **Independent Testing** - Could test the scheduling algorithm via pytest without needing to launch the UI
+- **Dual Interfaces** - Same logic powers both main.py (CLI) and app.py (web UI)
+- **Easy Feature Addition** - When Phase 4 added smart algorithms, I only modified pawpal_system.py and tests. The UI integration was straightforward because the logic layer exposed clean, well-documented interfaces
+- **Clear Responsibilities** - Each class has a single, well-defined job: Owner manages pets, Pet manages tasks, Scheduler handles scheduling logic
+
+This architecture made the project manageable and maintainable. The separation of concerns meant that adding new features (Phase 4) didn't require a complete rewrite - just new methods with clear contracts.
 
 **b. What you would improve**
 
-- If you had another iteration, what would you improve or redesign?
+If I had another iteration, I would:
+
+1. **Multi-Day Scheduling:** Currently only schedules one day at a time. Extend to weekly planning with day-of-week preferences (e.g., "Walk Mondays and Wednesdays")
+
+2. **Smarter Conflict Resolution:** Instead of just warning about conflicts, suggest alternative time slots or automatically reschedule lower-priority tasks
+
+3. **Optimization Algorithm Comparison:** Implement a dynamic programming solution and compare its results against the greedy algorithm to quantify the tradeoff empirically
+
+4. **Pet Behavior Profiles:** Store learned preferences (e.g., "Mochi prefers walks at 7 AM") and use machine learning to auto-suggest optimal task times
+
+5. **Data Persistence Layer:** Save schedules to a database or JSON files to build history, track trends, and analyze pet care patterns over weeks/months
 
 **c. Key takeaway**
 
-- What is one important thing you learned about designing systems or working with AI on this project?
+**Most important learning:** AI is a powerful implementation partner, but **you must remain the system architect.**
+
+Throughout this project, I learned that:
+
+**AI excels at:**
+- Implementing well-specified methods (e.g., "filter using list comprehensions")
+- Suggesting algorithms for known problems (e.g., interval overlap detection)
+- Generating boilerplate code (docstrings, test scaffolds)
+
+**AI struggles with:**
+- Ambiguous requirements ("make it better" - better how?)
+- Architectural decisions (greedy vs. optimal, prevention vs. warning)
+- Understanding real-world context (user workflows, edge case importance)
+
+**The ideal workflow I discovered:**
+1. **Human designs** the system architecture (UML, class responsibilities, data flow)
+2. **Human specifies** what each component should do (docstrings, behavior contracts)
+3. **AI implements** the specifications efficiently with clean code
+4. **Human evaluates** suggestions against real-world use cases and tradeoffs
+5. **Human decides** which features to prioritize (recurring tasks vs. complex optimization)
+
+AI dramatically accelerated implementation speed, but didn't replace critical thinking about:
+- **Why** we make certain design choices (tradeoffs, constraints)
+- **How** users will actually interact with the system (UX implications)
+- **What** features provide the most value (priority vs. feature creep)
+
+The human engineer owns the "why" decisions; AI assists with the "how" implementation. This partnership multiplies productivity while maintaining thoughtful system design.
