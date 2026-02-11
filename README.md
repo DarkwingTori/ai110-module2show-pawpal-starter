@@ -164,11 +164,15 @@ Open browser to `http://localhost:8501` for interactive experience:
 - Track completion with real-time metrics
 - View reasoning and conflicts
 
-### 📸 Demo Screenshot
+### 📸 Demo Screenshots
 
-<a href="/course_images/ai110/pawpal_screenshot.png" target="_blank"><img src='/course_images/ai110/pawpal_screenshot.png' title='PawPal App' width='' alt='PawPal App' class='center-block' /></a>
+![PawPal+ Streamlit Interface - Task Management](pawpal_screenshot2.png)
 
 *Interactive Streamlit interface showing owner setup (sidebar), pet management with priority indicators (🔴 HIGH, 🟡 MEDIUM, 🟢 LOW), task assignment, and real-time metrics*
+
+![PawPal+ Streamlit Interface - Full View](pawpal_screenshot.png)
+
+*Complete view of PawPal+ showing task list, priority indicators, recurring task badges (🔄), and time utilization metrics*
 
 ### Run Tests
 ```bash
