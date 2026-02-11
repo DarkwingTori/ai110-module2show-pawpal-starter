@@ -376,3 +376,158 @@ AI dramatically accelerated implementation speed, but didn't replace critical th
 - **What** features provide the most value (priority vs. feature creep)
 
 The human engineer owns the "why" decisions; AI assists with the "how" implementation. This partnership multiplies productivity while maintaining thoughtful system design.
+
+---
+
+## 6. Multi-Model Prompt Comparison
+
+**Algorithmic Task:** Implement logic to automatically create the next occurrence of a recurring task (daily/weekly) when marked complete.
+
+### Prompt Given to Models:
+*"Implement a method that creates the next occurrence of a recurring pet care task. The task has a frequency (daily or weekly) and when marked complete, should automatically generate a new task for the next occurrence with an updated due date."*
+
+### Model Responses Comparison
+
+#### Claude (Anthropic) - Explicit and Readable
+**Approach:** Template pattern with explicit date calculation
+
+```python
+def create_next_occurrence(self, completion_date: str = None) -> 'Task':
+    if self.frequency is None:
+        return None
+
+    from datetime import datetime, timedelta
+
+    if completion_date is None:
+        completion_date = datetime.now().strftime('%Y-%m-%d')
+
+    completed = datetime.strptime(completion_date, '%Y-%m-%d')
+
+    if self.frequency == "daily":
+        next_date = completed + timedelta(days=1)
+    elif self.frequency == "weekly":
+        next_date = completed + timedelta(weeks=1)
+    else:
+        return None
+
+    return Task(...)  # New instance with updated date
+```
+
+**Strengths:**
+- Clean separation of concerns (date calculation, object creation)
+- Explicit edge case handling (None frequency returns None)
+- Uses Python datetime library idiomatically
+- Clear variable names (completed, next_date)
+- Easy to debug - each step is explicit
+
+**Style:** Pythonic and readable
+
+#### GPT-4 (OpenAI) - Compact and Clever
+**Approach:** More compact with dict-based frequency mapping
+
+```python
+def create_next_occurrence(self, completion_date=None):
+    if not self.frequency:
+        return None
+
+    from datetime import datetime, timedelta
+
+    completion_date = completion_date or datetime.now().strftime('%Y-%m-%d')
+    completed = datetime.strptime(completion_date, '%Y-%m-%d')
+
+    frequency_map = {"daily": timedelta(days=1), "weekly": timedelta(weeks=1)}
+    delta = frequency_map.get(self.frequency)
+
+    if not delta:
+        return None
+
+    next_date = completed + delta
+    return Task(**{**self.__dict__, 'next_due_date': next_date.strftime('%Y-%m-%d')})
+```
+
+**Strengths:**
+- Dictionary mapping reduces if/elif chain
+- Uses `or` for default value (more compact)
+- Dict unpacking for object creation (`**self.__dict__`)
+- Slightly fewer lines overall
+
+**Style:** Clever and concise, but less explicit
+
+#### Gemini (Google) - Extensible and Enterprise
+**Approach:** Configuration-driven with class-level constants
+
+```python
+RECURRENCE_DELTAS = {
+    "daily": lambda: timedelta(days=1),
+    "weekly": lambda: timedelta(weeks=1)
+}
+
+def create_next_occurrence(self, completion_date: Optional[str] = None) -> Optional['Task']:
+    if self.frequency not in RECURRENCE_DELTAS:
+        return None
+
+    from datetime import datetime, timedelta
+
+    base_date = datetime.strptime(
+        completion_date or datetime.now().strftime('%Y-%m-%d'),
+        '%Y-%m-%d'
+    )
+
+    delta = RECURRENCE_DELTAS[self.frequency]()
+    next_occurrence_date = base_date + delta
+
+    return self._clone_with_date(next_occurrence_date.strftime('%Y-%m-%d'))
+```
+
+**Strengths:**
+- Configuration externalized (RECURRENCE_DELTAS constant)
+- Easily extensible (add new frequencies without code change)
+- Suggests helper method (_clone_with_date) for reusability
+- Full type hints on return value (`Optional['Task']`)
+
+**Style:** Enterprise-oriented, emphasizes extensibility and scalability
+
+### Analysis
+
+**Most Pythonic:** Claude's solution
+- **Zen of Python:** "Explicit is better than implicit" - the logic flow is immediately clear
+- **Readability counts** - no magic dict unpacking
+- **Simple is better than complex** - straightforward if/elif for 2 cases
+
+**Most Compact:** GPT-4's solution
+- Fewer lines of code (more concise)
+- Clever use of dict unpacking and `or` operator
+- May sacrifice some readability for brevity
+
+**Most Extensible:** Gemini's solution
+- Configuration-driven design pattern
+- Easy to add monthly, yearly, or custom recurrence
+- Suggests architectural patterns (helper methods, constants)
+
+### Which I Chose and Why
+
+I implemented **Claude's approach** because:
+
+1. **Readability:** The explicit if/elif structure makes the logic obvious to anyone reading the code
+2. **Educational Value:** This is a learning project - clarity matters more than cleverness
+3. **Maintainability:** Future developers (including my future self) can quickly understand what each branch does
+4. **Appropriate Complexity:** For only 2 frequencies (daily/weekly), a dictionary mapping or class constant adds complexity without meaningful benefit
+
+**When I would choose differently:**
+
+- **GPT-4's approach:** If I had 5+ frequency types or needed ultra-compact code for performance
+- **Gemini's approach:** If building a production system where new recurrence types (monthly, quarterly, custom intervals) are frequently added
+
+### Key Insight
+
+This comparison taught me that **there's no single "correct" solution** - each model optimizes for different values:
+- **Claude:** Readability and explicitness
+- **GPT-4:** Brevity and cleverness
+- **Gemini:** Extensibility and architecture
+
+The best choice depends on project context:
+- Educational project → Choose readability (Claude)
+- Code golf competition → Choose brevity (GPT-4)
+- Enterprise system → Choose extensibility (Gemini)
+
+As the human architect, I must evaluate these tradeoffs and choose the approach that best serves my project's goals, not just accept the first suggestion that works.
