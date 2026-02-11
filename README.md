@@ -164,6 +164,12 @@ Open browser to `http://localhost:8501` for interactive experience:
 - Track completion with real-time metrics
 - View reasoning and conflicts
 
+### 📸 Demo Screenshot
+
+<a href="/course_images/ai110/pawpal_screenshot.png" target="_blank"><img src='/course_images/ai110/pawpal_screenshot.png' title='PawPal App' width='' alt='PawPal App' class='center-block' /></a>
+
+*Interactive Streamlit interface showing owner setup (sidebar), pet management with priority indicators (🔴 HIGH, 🟡 MEDIUM, 🟢 LOW), task assignment, and real-time metrics*
+
 ### Run Tests
 ```bash
 pytest tests/ -v
