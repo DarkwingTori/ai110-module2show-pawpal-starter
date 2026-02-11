@@ -24,16 +24,25 @@ if "owner" not in st.session_state:
 with st.sidebar:
     st.header("Owner Setup")
 
-    # Owner name input
+    # Owner name input with reset functionality
     new_owner_name = st.text_input(
         "Owner name",
         value=st.session_state.owner.name,
-        key="owner_name_input"
+        key="owner_name_input",
+        help="Changing the name creates a new owner profile"
     )
 
-    # Update owner name if changed
-    if new_owner_name != st.session_state.owner.name:
-        st.session_state.owner.name = new_owner_name
+    # Update owner name if changed - creates new owner to avoid data mixing
+    if new_owner_name != st.session_state.owner.name and new_owner_name.strip():
+        # Create new owner (fresh start with no pets)
+        st.session_state.owner = Owner(
+            name=new_owner_name,
+            available_time_minutes=st.session_state.owner.available_time_minutes
+        )
+        st.session_state.current_pet = None
+        st.session_state.scheduler = None
+        st.session_state.schedule = None
+        st.info(f"Created new owner profile for {new_owner_name}")
 
     # Available time per day
     available_time = st.slider(
